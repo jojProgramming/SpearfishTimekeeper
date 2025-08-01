@@ -1,5 +1,7 @@
 import luma.oled
 import bme680
+import requests
+from PIL.ImageFont import ImageFont
 from luma.core.mixin import capabilities
 
 """
@@ -9,10 +11,13 @@ Ported from:
 https://gist.github.com/TheRayTracer/dd12c498e3ecb9b8b47f#file-clock-py
 """
 
-import time
+import time, sys
 import datetime
-from options import get_device
+from options import get_device, getLoc
 from luma.core.render import canvas
+from PIL import ImageFont
+import feedparser
+
 
 textArray = []
 sensor = bme680.BME680()
@@ -22,12 +27,24 @@ sensor = bme680.BME680()
 def main():
 	today_last_time = "Unknown"
 	today_last_minute = "Unknown"
+	display_mode = "TEMP"
+	last_weather_check = datetime.datetime.now() - datetime.timedelta(hours=2)
 	cx = 5
+	doWeather = False
+	weather = []
+	location = getLoc()
+	if location != 0:
+		doWeather = True
+		weatherurl = f"https://weather-broker-cdn.api.bbci.co.uk/en/forecast/rss/3day/{location}"
+
 	while True:
 		now = datetime.datetime.now()
-		today_date = now.strftime("%d %b %y")
+		today_date = now.strftime("%d %m %yyyy")
 		today_time = now.strftime("%H:%M:%S")
 		today_minute = now.strftime("%M")
+		today_second = int( now.strftime("%S"))
+
+		if (last_weather_check <= datetime.datetime.now() - datetime.timedelta(minutes=20)): doWeather = True
 
 		if today_time != today_last_time:
 			today_last_time = today_time
@@ -46,11 +63,54 @@ def main():
 			cy = min(device.height, 128) / 2
 
 			textArray.append(today_time)
-			textArray.append(today_minute)
+			textArray.append(today_date)
+			if doWeather:
+				feed = feedparser.parse(weatherurl)
+
+				response = requests.get(weatherurl)
+				response.raise_for_status()
+				feed = feedparser.parse(response.content)
+				entry = feed.entries[0]
+				msg = entry.title
+				print(msg)
+				tempArray = msg.split(",")
+				weather = tempArray[0].split(":")[1].strip().split(" ")
+
+				print(weather)
+				last_weather_check = datetime.datetime.now()
+				doWeather = False
+
+			textArray.append()
 			if sensor.get_sensor_data():
-				textArray.append(get_temperature())
-				textArray.append(get_humidity())
-				textArray.append(get_pressure())
+				if today_second % 20 == 0:
+					display_mode = "ADVANCED"
+
+				elif today_second % 15 == 0:
+					display_mode = "TEMP"
+				elif today_second % 10 == 0:
+					display_mode = "HUM"
+				elif today_second % 5 == 0:
+					display_mode = "PRES"
+
+				if display_mode == "TEMP":
+					textArray.append("TEMPERATURE")
+					textArray.append(get_temperature())
+				elif display_mode == "HUM":
+					textArray.append("HUMIDITY")
+					textArray.append(get_humidity())
+				elif display_mode == "ADVANCED":
+					if location == 0:
+						textArray.append("Spearfish")
+						textArray.append("TIMEKEEPER")
+					else:
+						for weatherItem in weather:
+							textArray.append(weatherItem)
+				else:
+					textArray.append("PRESSURE")
+					textArray.append(get_pressure())
+
+
+
 			draw_text(cx, 16)
 			textArray.clear()
 
@@ -58,20 +118,21 @@ def main():
 
 def draw_text(cx, spacing):
 	current_y = 5
+	font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 18)
 	with canvas(device) as draw:
 		for element in textArray:
-			draw.text((cx, current_y), element, fill="white")
+			draw.text((cx, current_y), element, fill="white", font=font)
 			current_y += spacing
 
 
 def get_temperature():
-	return "TEMPERATURE: " + str(sensor.data.temperature)
+	return str(sensor.data.temperature) + "°C"
 
 def get_humidity():
-	return "HUMIDITY: " + str(sensor.data.humidity)
+	return str(sensor.data.humidity) + "%"
 
 def get_pressure():
-	return "PRESSURE: " + str(sensor.data.temperature)
+	return str(sensor.data.pressure) + "hPa"
 
 if __name__ == "__main__":
 	try:

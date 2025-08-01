@@ -26,9 +26,11 @@ SOFTWARE.
 '''
 import sys
 import logging
+from wsgiref.util import request_uri
 
 from luma.core import cmdline, error
 
+locations = []
 
 # logging
 logging.basicConfig(
@@ -38,6 +40,8 @@ logging.basicConfig(
 # ignore PIL debug messages
 logging.getLogger('PIL').setLevel(logging.ERROR)
 
+def getLoc():
+	return locations[0] if len(locations) > 0 else "0"
 
 def display_settings(device, args):
 	"""
@@ -69,7 +73,12 @@ def get_device(actual_args=None):
 	if actual_args is None:
 		actual_args = sys.argv[1:]
 	parser = cmdline.create_parser(description='luma.examples arguments')
+	parser.add_argument('--location', type=str, help='Specify a BBC Weather location')
+
 	args = parser.parse_args(actual_args)
+
+	if args.location:
+		locations.append(int(args.location))
 
 	if args.config:
 		# load config from file
