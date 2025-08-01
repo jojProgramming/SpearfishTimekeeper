@@ -18,6 +18,8 @@ from luma.core.render import canvas
 from PIL import ImageFont
 import feedparser
 
+#TEMP ONLY
+from subprocess import PIPE, Popen
 
 textArray = []
 sensor = bme680.BME680()
@@ -30,9 +32,13 @@ def main():
 	display_mode = "TEMP"
 	last_weather_check = datetime.datetime.now() - datetime.timedelta(hours=2)
 	cx = 5
+	modes = ["ADVANCED", "TEMPERATURE", "HUMIDITY", "PRESSURE"]
 	doWeather = False
 	weather = []
 	location = getLoc()
+	temp = ""
+	humidity = ""
+	pressure = ""
 	if location != 0:
 		doWeather = True
 		weatherurl = f"https://weather-broker-cdn.api.bbci.co.uk/en/forecast/rss/3day/{location}"
@@ -82,23 +88,25 @@ def main():
 
 			textArray.append("")
 			if sensor.get_sensor_data():
-				if today_second % 20 == 0:
-					display_mode = "ADVANCED"
+				if today_second % 5 == 0:
+					display_mode = modes.pop(0)
+					modes.append(display_mode)
 
-				elif today_second % 15 == 0:
-					display_mode = "TEMP"
-				elif today_second % 10 == 0:
-					display_mode = "HUM"
-				elif today_second % 5 == 0:
-					display_mode = "PRES"
-
-				if display_mode == "TEMP":
+				if display_mode == "TEMPERATURE":
 					textArray.append("TEMPERATURE")
-					textArray.append(get_temperature())
-				elif display_mode == "HUM":
+					if (temp == ""):
+						temp = get_temperature()
+					textArray.append(temp)
+				elif display_mode == "HUMIDITY":
 					textArray.append("HUMIDITY")
-					textArray.append(get_humidity())
+					if (humidity == ""):
+						humidity = get_humidity()
+					textArray.append(humidity)
 				elif display_mode == "ADVANCED":
+					temp = ""
+					humidity = ""
+					pressure = ""
+
 					if location == 0:
 						textArray.append("Spearfish")
 						textArray.append("TIMEKEEPER")
@@ -107,7 +115,9 @@ def main():
 							textArray.append(weatherItem)
 				else:
 					textArray.append("PRESSURE")
-					textArray.append(get_pressure())
+					if (pressure == ""):
+						pressure = get_pressure()
+					textArray.append(pressure)
 
 
 
@@ -126,7 +136,27 @@ def draw_text(cx, spacing):
 
 
 def get_temperature():
-	return str(sensor.data.temperature) + "°C"
+	factor = 1.0  # Smaller numbers adjust temp down, vice versa
+	smooth_size = 10  # Dampens jitter due to rapid CPU temp changes
+
+	cpu_temps = []
+	cpu_temp = get_cpu_temperature()
+	cpu_temps.append(cpu_temp)
+
+	if len(cpu_temps) > smooth_size:
+		cpu_temps = cpu_temps[1:]
+
+	smoothed_cpu_temp = sum(cpu_temps) / float(len(cpu_temps))
+	raw_temp = sensor.data.temperature
+	comp_temp = raw_temp - ((smoothed_cpu_temp - raw_temp) / factor)
+	return comp_temp + "°C"
+
+# Gets the CPU temperature in degrees C
+def get_cpu_temperature():
+	process = Popen(['vcgencmd', 'measure_temp'], stdout=PIPE)
+	output, _error = process.communicate()
+	return float(output[output.index(b'=') + 1:output.rindex(b"'")])
+
 
 def get_humidity():
 	return str(sensor.data.humidity) + "%"
