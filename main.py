@@ -94,13 +94,13 @@ def main():
 
 				if display_mode == "TEMPERATURE":
 					textArray.append("TEMPERATURE")
-					if (temp == ""):
-						temp = get_temperature()
+					#if (temp == ""):
+					temp = get_temperature()
 					textArray.append(temp)
 				elif display_mode == "HUMIDITY":
 					textArray.append("HUMIDITY")
-					if (humidity == ""):
-						humidity = get_humidity()
+					#if (humidity == ""):
+					humidity = get_humidity()
 					textArray.append(humidity)
 				elif display_mode == "ADVANCED":
 					temp = ""
@@ -115,8 +115,8 @@ def main():
 							textArray.append(weatherItem)
 				else:
 					textArray.append("PRESSURE")
-					if (pressure == ""):
-						pressure = get_pressure()
+					#if (pressure == ""):
+					pressure = get_pressure()
 					textArray.append(pressure)
 
 
