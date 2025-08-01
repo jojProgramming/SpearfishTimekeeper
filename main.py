@@ -136,26 +136,7 @@ def draw_text(cx, spacing):
 
 
 def get_temperature():
-	factor = 1.0  # Smaller numbers adjust temp down, vice versa
-	smooth_size = 10  # Dampens jitter due to rapid CPU temp changes
-
-	cpu_temps = []
-	cpu_temp = get_cpu_temperature()
-	cpu_temps.append(cpu_temp)
-
-	if len(cpu_temps) > smooth_size:
-		cpu_temps = cpu_temps[1:]
-
-	smoothed_cpu_temp = sum(cpu_temps) / float(len(cpu_temps))
-	raw_temp = sensor.data.temperature
-	comp_temp = raw_temp - ((smoothed_cpu_temp - raw_temp) / factor)
-	return comp_temp + "°C"
-
-# Gets the CPU temperature in degrees C
-def get_cpu_temperature():
-	process = Popen(['vcgencmd', 'measure_temp'], stdout=PIPE)
-	output, _error = process.communicate()
-	return float(output[output.index(b'=') + 1:output.rindex(b"'")])
+	return str(sensor.data.temperature) + "°C"
 
 
 def get_humidity():
