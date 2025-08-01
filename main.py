@@ -25,18 +25,17 @@ textArray = []
 sensor = bme680.BME680()
 
 
-
 def main():
 	today_last_time = "Unknown"
 	today_last_minute = "Unknown"
-	display_mode = "TEMP"
+	display_mode = "TEMPERATURE"
 	last_weather_check = datetime.datetime.now() - datetime.timedelta(hours=2)
 	cx = 5
 	modes = ["ADVANCED", "TEMPERATURE", "HUMIDITY", "PRESSURE"]
 	doWeather = False
 	weather = []
 	location = getLoc()
-	temp = ""
+	ctemp = ""
 	humidity = ""
 	pressure = ""
 	if location != 0:
@@ -61,7 +60,7 @@ def main():
 			if today_minute != today_last_minute:
 				today_last_minute = today_minute
 				if cx > 10:
-					cx = 5
+					cx = 2
 				else:
 					cx += 1
 
@@ -94,22 +93,31 @@ def main():
 
 				if display_mode == "TEMPERATURE":
 					textArray.append("TEMPERATURE")
-					#if (temp == ""):
-					temp = get_temperature()
-					textArray.append(temp)
+					if (ctemp == ""):
+						ctemp = get_cpu_temperature()
+
+					textArray.append(get_temperature())
+					textArray.append(ctemp)
 				elif display_mode == "HUMIDITY":
 					textArray.append("HUMIDITY")
 					#if (humidity == ""):
 					humidity = get_humidity()
 					textArray.append(humidity)
+					if (sensor.data.humidity > 65):
+						textArray.append("[!] TOO HIGH")
+					elif (sensor.data.humidity < 35):
+						textArray.append("[!] TOO LOW")
+					else:
+						textArray.append("[i] NORMAL")
 				elif display_mode == "ADVANCED":
-					temp = ""
+					ctemp = ""
 					humidity = ""
 					pressure = ""
 
 					if location == 0:
 						textArray.append("Spearfish")
 						textArray.append("TIMEKEEPER")
+						textArray.append(" advanced ")
 					else:
 						for weatherItem in weather:
 							textArray.append(weatherItem)
@@ -121,7 +129,7 @@ def main():
 
 
 
-			draw_text(cx, 16)
+			draw_text(cx, 18)
 			textArray.clear()
 
 		time.sleep(0.1)
@@ -131,13 +139,21 @@ def draw_text(cx, spacing):
 	font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 18)
 	with canvas(device) as draw:
 		for element in textArray:
-			draw.text((cx, current_y), element, fill="white", font=font)
+			if (datetime.datetime.now().second % 2 == 0):
+				draw.text((cx, current_y), element, fill="white", font=font)
+			else:
+				draw.text((cx, current_y), element, fill="white", font=font)
 			current_y += spacing
+
 
 
 def get_temperature():
 	return str(sensor.data.temperature) + "°C"
 
+def get_cpu_temperature():
+	with open("/sys/class/thermal/thermal_zone0/temp") as temp_file:
+		cpu_temp = float(temp_file.read()) / 1000.0
+		return "CPU: " + str(round(cpu_temp, 1)) + "°C"
 
 def get_humidity():
 	return str(sensor.data.humidity) + "%"
