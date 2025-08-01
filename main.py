@@ -80,7 +80,7 @@ def main():
 				last_weather_check = datetime.datetime.now()
 				doWeather = False
 
-			textArray.append()
+			textArray.append("")
 			if sensor.get_sensor_data():
 				if today_second % 20 == 0:
 					display_mode = "ADVANCED"
