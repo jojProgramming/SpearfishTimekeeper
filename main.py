@@ -43,12 +43,16 @@ def main():
 		weatherurl = f"https://weather-broker-cdn.api.bbci.co.uk/en/forecast/rss/3day/{location}"
 
 	while True:
+
 		now = datetime.datetime.now()
 		today_date = now.strftime("%d %m %yyyy")
 		today_time = now.strftime("%H:%M:%S")
 		today_minute = now.strftime("%M")
+		current_hour = now.strftime("%H")
 		today_second = int( now.strftime("%S"))
-
+		if (current_hour < 9) or (current_hour > 21):
+			time.sleep(5000)
+			continue
 		if (last_weather_check <= datetime.datetime.now() - datetime.timedelta(minutes=20)): doWeather = True
 
 		if today_time != today_last_time:
