@@ -43,15 +43,25 @@ def main():
 		weatherurl = f"https://weather-broker-cdn.api.bbci.co.uk/en/forecast/rss/3day/{location}"
 
 	while True:
+		with open("/sys/class/thermal/thermal_zone0/temp") as temp_file:
+			cpu_temp = float(temp_file.read()) / 1000.0
+			while cpu_temp > 50:
+				textArray.append("WARNING")
+				textArray.append("CPU TEMP")
+				textArray.append(get_cpu_temperature())
+				draw_text(cx, 18)
+				textArray.clear()
+				time.sleep(2)
+
 
 		now = datetime.datetime.now()
-		today_date = now.strftime("%d %m %yyyy")
+		today_date = now.strftime("%d %m %Y")
 		today_time = now.strftime("%H:%M:%S")
 		today_minute = now.strftime("%M")
-		current_hour = now.strftime("%H")
+		current_hour = int(now.strftime("%H"))
 		today_second = int( now.strftime("%S"))
 		if (current_hour < 9) or (current_hour > 21):
-			time.sleep(5000)
+			time.sleep(20)
 			continue
 		if (last_weather_check <= datetime.datetime.now() - datetime.timedelta(minutes=20)): doWeather = True
 
@@ -74,20 +84,24 @@ def main():
 			textArray.append(today_time)
 			textArray.append(today_date)
 			if doWeather:
-				feed = feedparser.parse(weatherurl)
+				try:
+					response = requests.get(weatherurl)
+					response.raise_for_status()
+					feed = feedparser.parse(response.content)
+					entry = feed.entries[0]
+					msg = entry.title
+					print(msg)
+					tempArray = msg.split(",")
+					weather = tempArray[0].split(":")[1].strip().split(" ")
 
-				response = requests.get(weatherurl)
-				response.raise_for_status()
-				feed = feedparser.parse(response.content)
-				entry = feed.entries[0]
-				msg = entry.title
-				print(msg)
-				tempArray = msg.split(",")
-				weather = tempArray[0].split(":")[1].strip().split(" ")
-
-				print(weather)
-				last_weather_check = datetime.datetime.now()
-				doWeather = False
+					print(weather)
+					last_weather_check = datetime.datetime.now()
+					doWeather = False
+				except:
+					weather.clear()
+					weather.append("ERROR")
+					weather.append("FETCHING")
+					weather.append("WEATHER")
 
 			textArray.append("")
 			if sensor.get_sensor_data():
