@@ -64,10 +64,10 @@ def main():
 		today_minute = int(now.strftime("%M"))
 		current_hour = int(now.strftime("%H"))
 		today_second = int( now.strftime("%S"))
-		if ((current_hour < 9) or (current_hour > 21) and contrast != 0):
+		if ((current_hour < 9 or current_hour > 21) and contrast != 0):
 			device.contrast(0)
 			contrast = 0
-		elif (not ((current_hour < 9) or (current_hour > 21)) and contrast != 255):
+		elif (not ((current_hour < 9 or current_hour > 21)) and contrast != 255):
 			device.contrast(255)
 			contrast = 255
 
