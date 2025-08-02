@@ -51,7 +51,8 @@ def main():
 				textArray.append(get_cpu_temperature())
 				draw_text(cx, 18)
 				textArray.clear()
-				time.sleep(2)
+				time.sleep(0.5)
+				cpu_temp = float(temp_file.read()) / 1000.0
 
 
 		now = datetime.datetime.now()
