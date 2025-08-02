@@ -67,9 +67,10 @@ def main():
 		if ((current_hour < 9) or (current_hour > 21) and contrast != 0):
 			device.contrast(0)
 			contrast = 0
-		elif (contrast != 255):
+		elif (not ((current_hour < 9) or (current_hour > 21)) and contrast != 255):
 			device.contrast(255)
 			contrast = 255
+
 		if (last_weather_check <= datetime.datetime.now() - datetime.timedelta(minutes=20)): doWeather = True
 
 		if today_time != today_last_time:
