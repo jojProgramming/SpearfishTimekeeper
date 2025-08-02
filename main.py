@@ -28,7 +28,7 @@ sensor = bme680.BME680()
 
 def main():
 	today_last_time = "Unknown"
-	today_last_minute = "Unknown"
+	today_last_minute = 1
 	display_mode = "TEMPERATURE"
 	last_weather_check = datetime.datetime.now() - datetime.timedelta(hours=2)
 	cx = 5
@@ -59,7 +59,7 @@ def main():
 		now = datetime.datetime.now()
 		today_date = now.strftime("%d %m %Y")
 		today_time = now.strftime("%H:%M:%S")
-		today_minute = now.strftime("%M")
+		today_minute = int(now.strftime("%M"))
 		current_hour = int(now.strftime("%H"))
 		today_second = int( now.strftime("%S"))
 		if (current_hour < 9) or (current_hour > 21):
@@ -111,18 +111,18 @@ def main():
 					display_mode = modes.pop(0)
 					modes.append(display_mode)
 
-				if (today_minute == 9) and today_second < 30:
+				if (today_minute == 0) and today_second < 60:
 					display_mode = "NHOUR"
-				elif (today_minute % 15) and today_second < 15:
+				elif (today_minute % 15 == 0) and today_second < 30:
 					display_mode = "NQUART"
 
 
 				if display_mode == "NHOUR":
-					textArray.append("A NEW HOUR")
-					textArray.append("BEGINS.")
-					textArray.append(genStars(10))
+					textArray.pop()
+					for i in range(4):
+						textArray.append(genStars(10))
 				elif display_mode == "NQUART":
-					for i in range(3):
+					for i in range(today_minute // 15):
 						textArray.append(genStars(10))
 				elif display_mode == "TEMPERATURE":
 					textArray.append("TEMPERATURE")
@@ -180,7 +180,7 @@ def draw_text(cx, spacing):
 
 def genStars(numberOfChars):
 	possible = ["*", "°", "o", " "]
-	temparray = choices(possible, weights= [3, 2, 1, 5], k=numberOfChars)
+	temparray = choices(possible, weights= [3, 2, 1, 12], k=numberOfChars)
 	string = ""
 	for i in temparray:
 		string += i
