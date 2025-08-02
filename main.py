@@ -13,6 +13,7 @@ https://gist.github.com/TheRayTracer/dd12c498e3ecb9b8b47f#file-clock-py
 
 import time, sys
 import datetime
+from random import choices
 from options import get_device, getLoc
 from luma.core.render import canvas
 from PIL import ImageFont
@@ -110,7 +111,20 @@ def main():
 					display_mode = modes.pop(0)
 					modes.append(display_mode)
 
-				if display_mode == "TEMPERATURE":
+				if (today_minute == 9) and today_second < 30:
+					display_mode = "NHOUR"
+				elif (today_minute % 15) and today_second < 15:
+					display_mode = "NQUART"
+
+
+				if display_mode == "NHOUR":
+					textArray.append("A NEW HOUR")
+					textArray.append("BEGINS.")
+					textArray.append(genStars(10))
+				elif display_mode == "NQUART":
+					for i in range(3):
+						textArray.append(genStars(10))
+				elif display_mode == "TEMPERATURE":
 					textArray.append("TEMPERATURE")
 					if (ctemp == ""):
 						ctemp = get_cpu_temperature()
@@ -164,7 +178,13 @@ def draw_text(cx, spacing):
 				draw.text((cx, current_y), element, fill="white", font=font)
 			current_y += spacing
 
-
+def genStars(numberOfChars):
+	possible = ["*", "°", "o", " "]
+	temparray = choices(possible, weights= [3, 2, 1, 5], k=numberOfChars)
+	string = ""
+	for i in temparray:
+		string += i
+	return string
 
 def get_temperature():
 	return str(sensor.data.temperature) + "°C"
