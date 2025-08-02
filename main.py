@@ -39,6 +39,8 @@ def main():
 	ctemp = ""
 	humidity = ""
 	pressure = ""
+	device.contrast(255)
+	contrast = 255
 	if location != 0:
 		doWeather = True
 		weatherurl = f"https://weather-broker-cdn.api.bbci.co.uk/en/forecast/rss/3day/{location}"
@@ -62,9 +64,12 @@ def main():
 		today_minute = int(now.strftime("%M"))
 		current_hour = int(now.strftime("%H"))
 		today_second = int( now.strftime("%S"))
-		if (current_hour < 9) or (current_hour > 21):
-			time.sleep(20)
-			continue
+		if ((current_hour < 9) or (current_hour > 21) and contrast != 0):
+			device.contrast(0)
+			contrast = 0
+		elif (contrast != 255):
+			device.contrast(255)
+			contrast = 255
 		if (last_weather_check <= datetime.datetime.now() - datetime.timedelta(minutes=20)): doWeather = True
 
 		if today_time != today_last_time:
