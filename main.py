@@ -31,7 +31,7 @@ def main():
 	today_last_minute = 1
 	display_mode = "TEMPERATURE"
 	last_weather_check = datetime.datetime.now() - datetime.timedelta(hours=2)
-	cx = 5
+	cx = 8
 	modes = ["ADVANCED", "TEMPERATURE", "HUMIDITY", "PRESSURE"]
 	doWeather = False
 	weather = []
@@ -77,7 +77,7 @@ def main():
 			today_last_time = today_time
 
 			now = datetime.datetime.now()
-			today_date = now.strftime("%d %b %y")
+			today_date = now.strftime("%a %d %B")
 
 			if today_minute != today_last_minute:
 				today_last_minute = today_minute
@@ -90,7 +90,16 @@ def main():
 			cy = min(device.height, 128) / 2
 
 			textArray.append(today_time)
-			textArray.append(today_date)
+			if (today_second < 30):
+				textArray.append(today_date)
+			else:
+				stringbuilding = "["
+				for i in range(today_minute // 5):
+					stringbuilding += "="
+				for i in range(12 - today_minute // 5):
+					stringbuilding += " "
+				stringbuilding += "]"
+				textArray.append(stringbuilding)
 			if doWeather:
 				try:
 					response = requests.get(weatherurl)
@@ -106,6 +115,8 @@ def main():
 					last_weather_check = datetime.datetime.now()
 					doWeather = False
 				except:
+					last_weather_check = datetime.datetime.now() - datetime.timedelta(minutes=10)
+					doWeather = False
 					weather.clear()
 					weather.append("ERROR")
 					weather.append("FETCHING")
@@ -143,11 +154,11 @@ def main():
 					humidity = get_humidity()
 					textArray.append(humidity)
 					if (sensor.data.humidity > 65):
-						textArray.append("[!] TOO HIGH")
+						textArray.append("[!] HIGH")
 					elif (sensor.data.humidity < 35):
-						textArray.append("[!] TOO LOW")
+						textArray.append("[!] LOW")
 					else:
-						textArray.append("[i] NORMAL")
+						textArray.append("[i] OK")
 				elif display_mode == "ADVANCED":
 					ctemp = ""
 					humidity = ""
@@ -173,13 +184,29 @@ def main():
 
 		time.sleep(0.1)
 
-def draw_text(cx, spacing):
+def draw_text_old(cx, spacing):
 	current_y = 5
 	font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 18)
 	with canvas(device) as draw:
 		for element in textArray:
 			if (datetime.datetime.now().second % 2 == 0):
 				draw.text((cx, current_y), element, fill="white", font=font)
+			else:
+				draw.text((cx, current_y), element, fill="white", font=font)
+			current_y += spacing
+
+def draw_text(cx, spacing):
+	current_y = 5
+	font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 18)
+	with canvas(device) as draw:
+		for element in textArray:
+			if (element == textArray[0]):
+				draw.text((cx, current_y), element, fill="white", font=ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 24))
+				current_y += 5
+			elif (element == textArray[1]):
+				draw.text((cx, current_y), element, fill="white",
+				font=ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 12))
+				current_y -= 5
 			else:
 				draw.text((cx, current_y), element, fill="white", font=font)
 			current_y += spacing
