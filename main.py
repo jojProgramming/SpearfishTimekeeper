@@ -34,7 +34,7 @@ def main():
 	display_mode = "TEMPERATURE"
 	last_weather_check = datetime.datetime.now() - datetime.timedelta(hours=2)
 	cx = 8
-	modes = ["ADVANCED", "TEMPERATURE", "HUMIDITY", "PRESSURE", "TRAIN:1", "TRAIN:2", "TRAIN:3", "TRAIN:4"]
+	modes = ["ADVANCED", "TRAIN:1", "TEMPERATURE", "TRAIN:2", "HUMIDITY", "TRAIN:3", "PRESSURE", "TRAIN:4", "ADVANCED", "TRAIN:5", "TEMPERATURE", "TRAIN:6"]
 	doWeather = False
 	weather = []
 	location = getLoc()
@@ -92,16 +92,9 @@ def main():
 			cy = min(device.height, 128) / 2
 
 			textArray.append(today_time)
-			if (today_second < 30):
-				textArray.append(today_date)
-			else:
-				stringbuilding = "["
-				for i in range(today_minute // 5):
-					stringbuilding += "="
-				for i in range(12 - today_minute // 5):
-					stringbuilding += " "
-				stringbuilding += "]"
-				textArray.append(stringbuilding)
+
+			textArray.append(today_date)
+
 			if doWeather:
 				try:
 					response = requests.get(weatherurl)
@@ -126,7 +119,7 @@ def main():
 
 			textArray.append("")
 			if sensor.get_sensor_data():
-				if today_second % 5 == 0:
+				if today_second % 10 == 0:
 					display_mode = modes.pop(0)
 					modes.append(display_mode)
 
@@ -175,11 +168,15 @@ def main():
 							textArray.append(weatherItem)
 				elif display_mode.startswith("TRAIN:"):
 					train_number = int(display_mode.split(":")[1])
-					train = get_train_number(train_number)
-
-					textArray.append(f"Train to {train['To']}")
-					textArray.append(f"Out:  {train['Scheduled']}")
-					textArray.append(f"{train['Expected']}")
+					train = get_train_number(train_number, cx)
+					textArray.pop()
+					textArray.pop()
+					textArray.append("NRE")
+					fromcrs = open("crs.txt", "r", encoding='utf-8-sig').read()
+					textArray.append(f"FROM {fromcrs}")
+					textArray.append(f"TO {train['To']}")
+					textArray.append(f"Out: {train['Scheduled']}")
+					textArray.append(f"Due {train['Expected']}")
 				else:
 					textArray.append("PRESSURE")
 					#if (pressure == ""):
@@ -242,10 +239,25 @@ def get_humidity():
 def get_pressure():
 	return str(sensor.data.pressure) + "hPa"
 
-def get_train_number(number):
+def get_train_number(number, cx):
 	global current_cache
 	global current_cached
+
 	if number != current_cached:
+		textArray.pop()
+		textArray.pop()
+
+		textArray.append("Syncing with")
+		textArray.append(" NATIONAL")
+		textArray.append("   RAIL  ")
+		textArray.append("ENQUIRIES")
+		draw_text(cx, 18)
+		textArray.pop()
+		textArray.pop()
+		textArray.pop()
+		textArray.pop()
+		textArray.append("")
+		textArray.append("")
 		current_cached = number
 		current_cache = get_train_by_departure(number)
 
