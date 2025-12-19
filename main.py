@@ -25,6 +25,8 @@ from subprocess import PIPE, Popen
 textArray = []
 sensor = bme680.BME680()
 
+current_cached = 9
+current_cache = dict()
 
 def main():
 	today_last_time = "Unknown"
@@ -32,7 +34,7 @@ def main():
 	display_mode = "TEMPERATURE"
 	last_weather_check = datetime.datetime.now() - datetime.timedelta(hours=2)
 	cx = 8
-	modes = ["ADVANCED", "TEMPERATURE", "HUMIDITY", "PRESSURE"]
+	modes = ["ADVANCED", "TEMPERATURE", "HUMIDITY", "PRESSURE", "TRAIN:1", "TRAIN:2", "TRAIN:3", "TRAIN:4"]
 	doWeather = False
 	weather = []
 	location = getLoc()
@@ -171,6 +173,13 @@ def main():
 					else:
 						for weatherItem in weather:
 							textArray.append(weatherItem)
+				elif display_mode.startswith("TRAIN:"):
+					train_number = int(display_mode.split(":")[1])
+					train = get_train_number(train_number)
+
+					textArray.append(f"Train to {train['To']}")
+					textArray.append(f"Out:  {train['Scheduled']}")
+					textArray.append(f"{train['Expected']}")
 				else:
 					textArray.append("PRESSURE")
 					#if (pressure == ""):
@@ -232,6 +241,44 @@ def get_humidity():
 
 def get_pressure():
 	return str(sensor.data.pressure) + "hPa"
+
+def get_train_number(number):
+	global current_cache
+	global current_cached
+	if number != current_cached:
+		current_cached = number
+		current_cache = get_train_by_departure(number)
+
+	return current_cache
+
+def get_train_by_departure(number):
+	try:
+		# Use a breakpoint in the code line below to debug your script.
+		api_key = open("api_key.txt", "r", encoding='utf-8-sig').read().strip()
+		crs = open("crs.txt", "r", encoding='utf-8-sig').read().strip()
+		print(api_key, crs)
+		head = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36',
+				'x-apikey': api_key}
+		r = requests.get('https://api1.raildata.org.uk/1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepartureBoard/' + crs,
+						 headers=head,
+						 params={"numRows" : 10})
+		print("The Status Code", r.status_code)
+		print("The Response Text", r.text)
+		raildata : dict = r.json()
+		trainList = raildata.get("trainServices")
+		trainInstance = trainList[number]
+
+		scheduled = trainInstance.get("std")
+		expected = trainInstance.get("etd")
+		to_crs = trainInstance.get("destination")[0].get("crs")
+
+		print(scheduled, expected, to_crs)
+		return dict(Scheduled=scheduled, Expected=expected, To=to_crs)
+	except Exception as e:
+		print(f"An error occurred: {e}")
+		return {"Scheduled": "Error",
+				"Expected": "Error",
+				"To" : "Error"}
 
 if __name__ == "__main__":
 	try:
